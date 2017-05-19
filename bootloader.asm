@@ -26,23 +26,28 @@ AlignSegments:
 	call sleep
 	call sleep
 	call sleep
+	call sleep
+	call sleep
 	call shutdown
 
 	jmp $
 
+; Write String to console then goes to the next line
+; SI - String Stream to write
 println:
-	pusha
+	push ax
 	call print
 	mov al, 0x0d ; CR
 	call printChar
 	mov al, 0x0a ; LF
 	call printChar
-	popa
+	pop ax
 	ret
 
+; Write String to console
 ; SI - String Stream to write
 print:
-	pusha
+	push ax
 	.charLoop:
 		mov al, [si] ; Setting the char to print on AL
 		cmp al, 0 ; Checking end of string as marked by a 0
@@ -51,31 +56,31 @@ print:
 		add si, 1 ; Increase the pointer to get the next char
 		jmp .charLoop
 	.return:
-		popa
+		pop ax
 		ret
 
 ; AL - Char to print
 printChar:
-	pusha
+	push ax
 	; Printing a character
 	; http://www.ctyme.com/intr/rb-0106.htm
 	mov ah, 0x0e ; Teletype Output
 	int 0x10 ; Video Services
-	popa
+	pop ax
 	ret
 
-; Sleeps for 0.5 second
+; Sleeps for AL * 0.1 second
+; AL - 10ths of seconds to sleel
 sleep:
 	pusha
 	mov ah, 0x86 ; Sleep
-	mov cx, 0x0007
-	mov dx, 0xa120
+	mov cx, 0x0001
+	mov dx, 0x86a0
 	int 0x15
 	popa
 	ret
 	
 shutdown:
-	pusha
 	; Getting APM Instalation Information
 	; http://www.ctyme.com/intr/rb-1394.htm
 	mov ax, 0x5300 ; Installation Check
