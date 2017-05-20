@@ -15,18 +15,14 @@ AlignSegments:
 	mov es, ax
 	mov fs, ax
 	mov gs, ax
-	mov sp, main
+	mov sp, main ; align the top of the stack to before the bootloader address
 	cld
 	sti
 
-	int 0x13
+	int 0x13 ; Reset disks
 	
 	mov si, MESSAGE
 	call println
-	call sleep
-	call sleep
-	call sleep
-	call sleep
 	call sleep
 	call shutdown
 
@@ -35,39 +31,34 @@ AlignSegments:
 ; Write String to console then goes to the next line
 ; SI - String Stream to write
 println:
+	; Printing a character
+	; http://www.ctyme.com/intr/rb-0106.htm
 	push ax
 	call print
+	mov ah, 0x0e ; Teletype Output
 	mov al, 0x0d ; CR
-	call printChar
+	int 0x10 ; Video Services
 	mov al, 0x0a ; LF
-	call printChar
+	int 0x10 ; Video Services
 	pop ax
 	ret
 
 ; Write String to console
 ; SI - String Stream to write
 print:
+	; Printing a character
+	; http://www.ctyme.com/intr/rb-0106.htm
 	push ax
+	mov ah, 0x0e ; Teletype Output
 	.charLoop:
-		mov al, [si] ; Setting the char to print on AL
-		cmp al, 0 ; Checking end of string as marked by a 0
-		je .return ; Reach the end of the string
-		call printChar ; Print char at AL
-		add si, 1 ; Increase the pointer to get the next char
+		lodsb ; Load address on SI to AL and increment SI
+		or al, al ; Checking end of string as marked by a 0
+		je .return ; Reach the end of the string		
+		int 0x10 ; Video Services
 		jmp .charLoop
 	.return:
 		pop ax
 		ret
-
-; AL - Char to print
-printChar:
-	push ax
-	; Printing a character
-	; http://www.ctyme.com/intr/rb-0106.htm
-	mov ah, 0x0e ; Teletype Output
-	int 0x10 ; Video Services
-	pop ax
-	ret
 
 ; Sleeps for AL * 0.1 second
 ; AL - 10ths of seconds to sleel
