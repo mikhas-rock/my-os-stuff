@@ -19,10 +19,21 @@ AlignSegments:
 	cld
 	sti
 
-	int 0x13 ; Reset disks
+	int 0x13 ; Reset disks;  ax must be 0 (that have been set in a couple of instructions before)
 	
 	mov si, MESSAGE
 	call println
+	mov dx, 0x1234
+	call printh
+	
+	mov dx, 0xCE0F
+	call printh
+	
+	mov dx, 0x0001
+	call printh
+	
+	call sleep
+	call sleep
 	call sleep
 	call shutdown
 
@@ -59,7 +70,37 @@ print:
 	.return:
 		pop ax
 		ret
-
+		
+; Write an Hexadecimal string to the console
+; DX - The Value to be printed
+printh:
+	pusha
+	mov ah, 0x0e ; Teletype Output
+	mov al, "0"
+	int 0x10
+	mov al, "x"
+	int 0x10
+	
+	mov cx, 16
+	.charLoop:
+		sub cx, 4
+		mov bx, dx
+		shr bx, cl
+		and bx, 0x000f	
+		mov al, [bx + HEX_CHAR_TABLE]
+		int 0x10 ; Video Services
+		or cx, cx
+		jne .charLoop
+	
+	mov al, 0x0d ; CR
+	int 0x10 ; Video Services
+	mov al, 0x0a ; LF
+	int 0x10 ; Video Services
+	popa
+	ret
+	
+HEX_CHAR_TABLE db "0123456789ABCDEF"
+	
 ; Sleeps for AL * 0.1 second
 ; AL - 10ths of seconds to sleel
 sleep:
@@ -84,9 +125,9 @@ shutdown:
 	mov cx, 0x0003 ;State = OFF
 	int 0x15
 	
-	
 busyLoop:
 	jmp $
+	
 
 MESSAGE db "MY BOOT LOADER", 0
 		
